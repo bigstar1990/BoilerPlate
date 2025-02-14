@@ -1,6 +1,6 @@
 import type { NextAuthOptions, User } from 'next-auth'
-import CredentialProvider from 'next-auth/providers/credentials'
-import { MongoDBAdapter } from '@auth/mongodb-adapter'
+import credentialsProvider from 'next-auth/providers/credentials'
+import { MongoDBAdapter as mongoDBAdapter } from '@auth/mongodb-adapter'
 import clientPromise from '@/lib/mongoClient'
 import { randomUUID, randomBytes } from 'crypto'
 import { getUser } from './db/users'
@@ -22,7 +22,7 @@ if (!MONGO_COLLECTION_VERIFICATION_TOKENS)
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    CredentialProvider({
+    credentialsProvider({
       id: 'Credentials',
       name: 'Credentials',
       credentials: {
@@ -31,17 +31,18 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         try {
-          console.log(credentials)
+          console.log(credentials, 'credentials')
 
           if (!credentials) return null
           const { user } = await getUser(credentials.username)
 
           if (!user) return null
-          console.log(await compare(credentials.password, user.password))
+          const isAuthorized = await compare(credentials.password, user.password)
+          console.log(isAuthorized, 'authorized')
 
-          if (await compare(credentials.password, user.password)) {
+          if (isAuthorized) {
             return {
-              id: '',
+              id: user.id || '',
               username: user.username,
               role: user.role,
             }
@@ -63,7 +64,7 @@ export const authOptions: NextAuthOptions = {
       return randomUUID?.() ?? randomBytes(32).toString('hex')
     },
   },
-  adapter: MongoDBAdapter(clientPromise, {
+  adapter: mongoDBAdapter(clientPromise, {
     collections: {
       Accounts: MONGO_COLLECTION_ACCOUNTS,
       Sessions: MONGO_COLLECTION_SESSIONS,

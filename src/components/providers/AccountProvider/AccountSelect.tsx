@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import {
   Select,
   SelectItem,
@@ -9,12 +9,9 @@ import {
   SelectContent,
 } from '@/components/shadcn/select'
 import { useAccount } from './AccountContext'
-import type { Accounts } from '@/types'
-import { cookies } from 'next/headers'
-import { saveCookies } from '@/app/saveCookies'
-import { getCookies } from '@/app/getCookies'
+import Account from '@/types/account'
 
-export const AccountSelect = ({ accounts }: { accounts: Accounts[] }) => {
+export const AccountSelect = ({ accounts }: { accounts: Account[] }) => {
   const { account, switchAccount, loading } = useAccount()
 
   if (loading) return <div>Loading...</div>

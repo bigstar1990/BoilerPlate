@@ -19,6 +19,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/shadcn/sidebar'
 import { AppSidebar } from '@/components/providers/sidebar/app-sidebar'
 import { getServerSession } from 'next-auth'
 
+// eslint-disable-next-line new-cap
 const inter = Inter({ subsets: ['latin'] })
 
 const getAccountInfos = async (username: string): Promise<{ accounts: any }> => {
@@ -51,7 +52,7 @@ export default async function RootLayout(props: RootLayoutProps) {
 
   return (
     <html lang={(await props.params)?.lang} suppressHydrationWarning>
-      <body>
+      <body className={inter.className}>
         <DictionaryProvider dictionary={dictionary}>
           <Suspense fallback={<Loading />}>
             <AccountProvider session={session} accounts={accounts || []}>

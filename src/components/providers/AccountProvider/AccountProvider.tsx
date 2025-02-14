@@ -3,20 +3,20 @@
 import React, { useState, useEffect } from 'react'
 import { AccountContext } from './AccountContext'
 import { getAccountAdmin } from '@/actions/account'
-import type { Accounts } from '@/types'
-import Account from '@/types/client/account'
-import { cookies } from 'next/headers'
 import { saveCookies } from '@/app/saveCookies'
+import Account from '@/types/account'
+
+interface AccountProviderProps {
+  children: React.ReactNode
+  accounts: Account[]
+  session: any
+}
 
 export const AccountProvider = ({
   children,
   accounts: initialAccounts,
   session,
-}: {
-  accounts: Account[]
-  children: React.ReactNode
-  session: any
-}) => {
+}: AccountProviderProps) => {
   const [account, setAccount] = useState<Account | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +63,7 @@ export const AccountProvider = ({
     }
 
     fetchAccount()
-  }, [initialAccounts, session])
+  }, [initialAccounts, session, accounts])
 
   // Gestion du changement de compte
   const switchAccount = async (newAccountId: string) => {

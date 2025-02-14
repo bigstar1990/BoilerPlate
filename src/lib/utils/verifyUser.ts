@@ -1,7 +1,6 @@
 import { authOptions } from '@/lib/auth'
 import { getServerSession } from 'next-auth'
 import { getUser } from '@/lib/db/users'
-import { getProfilWithUsername } from '@/lib/db/profils'
 import Role from '@/types/role'
 
 export async function verifUser(
@@ -14,7 +13,7 @@ export async function verifUser(
   if (!session?.user?.username)
     return { success: false, res: { status: 400, success: false, error: 'no username' } }
 
-  const { user, error: errorUser } = await getUser({ username: session.user.username })
+  const { user, error: errorUser } = await getUser(session.user.username)
 
   if (errorUser || !user)
     return { success: false, res: { status: 500, success: false, error: errorUser } }

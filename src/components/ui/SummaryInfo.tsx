@@ -3,7 +3,6 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card'
 import { Separator } from '@/components/shadcn/separator'
 import { cn } from '@/lib/utils'
-import { DataTable } from '../campaigns/data-table'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../shadcn/table'
 import { ScrollArea } from '../shadcn/scroll-area'
 

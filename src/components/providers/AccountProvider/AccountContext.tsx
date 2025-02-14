@@ -1,6 +1,6 @@
 'use client'
 
-import Account from '@/types/client/account'
+import Account from '@/types/account'
 import { createContext, useContext } from 'react'
 
 type AccountContextType = {

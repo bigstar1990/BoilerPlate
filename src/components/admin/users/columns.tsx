@@ -1,8 +1,8 @@
-import { columnsObjType, getColumnnnDef } from '@/components/ui/shadcn-data-table/columns'
+import { FieldConfig } from '@/components/ui/better-form'
+import { columnsObjType } from '@/components/ui/shadcn-data-table/columns'
 import { DataTableRowActions } from '@/components/ui/shadcn-data-table/data-table-row-actions'
-import { User } from '@/types'
 
-import { FieldConfig } from '@/components/ui/updateForm'
+import User from '@/types/user'
 
 export default function getUserColumnDef(onEdit: any, onDelete: any): columnsObjType[] {
   return [
