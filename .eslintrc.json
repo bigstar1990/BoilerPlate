@@ -1,0 +1,14 @@
+{
+  "extends": ["next/core-web-vitals", "prettier"],
+  "plugins": ["prettier"],
+  "rules": {
+    "prettier/prettier": "error",
+    "no-var": "error",
+    "one-var": ["error", "never"],
+    "new-cap": "error",
+    "new-parens": "error",
+    "constructor-super": "error"
+
+  }
+}
+
