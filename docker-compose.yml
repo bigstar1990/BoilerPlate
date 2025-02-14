@@ -1,0 +1,11 @@
+services:
+  node:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: ovenplate
+    restart: always
+    environment:
+      - TZ=Europe/Paris
+    ports:
+      - '3000:3000'
