@@ -1,8 +1,13 @@
-import { NextRequestWithAuth, withAuth } from 'next-auth/middleware'
+import {
+  NextMiddlewareWithAuth,
+  NextRequestWithAuth,
+  withAuth,
+} from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import setup from '../setup.json'
 import locales from '@/localization/locales.json'
+import { withCache } from './lib/middlewareCache'
 
 const defaultLocale = 'en'
 const nonLocalePaths = ['/api', '/uploads', '/assets']
@@ -17,6 +22,16 @@ function getLocale(request: NextRequest) {
 
 function middleware(request: NextRequestWithAuth) {
   const { pathname } = request.nextUrl
+
+  // Add caching for static paths
+  if (pathname.startsWith('/_next/') || pathname.includes('/static/')) {
+    return withCache(
+      async () => {
+        return NextResponse.next()
+      },
+      { revalidate: 31536000 }
+    ) // Cache for 1 year
+  }
 
   // Vérifier si setup.setup est false et rediriger vers /setup si nécessaire
   if (!setup.setup && pathname.includes('/setup')) {
@@ -41,12 +56,12 @@ function middleware(request: NextRequestWithAuth) {
   return NextResponse.redirect(request.nextUrl)
 }
 
-export default withAuth(middleware, {
+export default withAuth(middleware as NextMiddlewareWithAuth, {
   callbacks: {
     authorized: async ({ req, token }) => {
-      // if (setup.setup == true) {
-      //   return true
-      // }
+      if (setup.setup === true) {
+        return true
+      }
       const pathname = req.nextUrl.pathname.replace(`/${getLocale(req)}`, '')
       const firstPath =
         '/' + (pathname.split('/').length > 1 ? pathname.split('/')[1] : '')
