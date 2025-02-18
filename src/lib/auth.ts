@@ -5,6 +5,7 @@ import clientPromise from '@/lib/mongoClient'
 import { randomUUID, randomBytes } from 'crypto'
 import { getUser } from './db/users'
 import { compare } from './utils/hash'
+import { unstable_cache } from 'next/cache'
 
 const MONGO_DATABASE_NAME = process.env.MONGO_DATABASE_NAME
 const MONGO_COLLECTION_ACCOUNTS = process.env.MONGO_COLLECTION_ACCOUNTS
@@ -19,6 +20,14 @@ if (!MONGO_COLLECTION_SESSIONS) throw new Error('MONGO_COLLECTION_SESSIONS not d
 if (!MONGO_COLLECTION_USERS) throw new Error('MONGO_COLLECTION_USERS not defined')
 if (!MONGO_COLLECTION_VERIFICATION_TOKENS)
   throw new Error('MONGO_COLLECTION_VERIFICATION_TOKENS not defined')
+
+const getCachedUserAuth = unstable_cache(
+  async (username: string) => {
+    return await getUser(username)
+  },
+  ['auth-user'],
+  { revalidate: 30 } // Shorter cache time for auth-related queries
+)
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -92,7 +101,7 @@ export const authOptions: NextAuthOptions = {
       if (user) token.user = user as User
 
       const u = token.user as any
-      let { user: dbUser, error } = await getUser(u.username)
+      let { user: dbUser, error } = await getCachedUserAuth(u.username)
 
       if (!dbUser) {
         return token

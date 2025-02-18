@@ -5,12 +5,21 @@ import { AccountContext } from './AccountContext'
 import { getAccountAdmin } from '@/actions/account'
 import { saveCookies } from '@/app/saveCookies'
 import Account from '@/types/account'
+import { unstable_cache } from 'next/cache'
 
 interface AccountProviderProps {
   children: React.ReactNode
   accounts: Account[]
   session: any
 }
+
+const getCachedAccountAdmin = unstable_cache(
+  async (accountId: string) => {
+    return await getAccountAdmin(accountId)
+  },
+  ['account-admin'],
+  { revalidate: 60 }
+)
 
 export const AccountProvider = ({
   children,
@@ -30,22 +39,18 @@ export const AccountProvider = ({
         setLoading(true)
         setError(null)
 
-        // Vérifiez si les comptes sont déjà stockés dans le localStorage
         const storedAccounts = localStorage.getItem('accounts')
         if (storedAccounts) {
           const parsedAccounts = JSON.parse(storedAccounts)
           setAccounts(parsedAccounts)
 
-          // Vérifiez si un compte est sélectionné dans le localStorage
           const selectedAccount = localStorage.getItem('selectedAccount')
           if (selectedAccount) {
-            console.log('selectedAccount', JSON.parse(selectedAccount))
             setAccount(JSON.parse(selectedAccount))
           }
         } else {
-          // Si les comptes ne sont pas dans le localStorage, chargez-les depuis le serveur
-          const { account } = await getAccountAdmin(initialAccounts[0].id)
-          console.log('account', account)
+          // Use cached version for initial account fetch
+          const { account } = await getCachedAccountAdmin(initialAccounts[0].id)
           if (account) {
             setAccount(account)
             setAccounts(initialAccounts)
