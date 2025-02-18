@@ -1,6 +1,7 @@
 import clientPromise from '@/lib/mongoClient'
 import User from '@/types/user'
 import { Collection, Db, MongoClient, ObjectId } from 'mongodb'
+import { unstable_cache } from 'next/cache'
 
 const dbName = process.env.MONGO_DATABASE_NAME
 const Users = process.env.MONGO_COLLECTION_USERS as string
@@ -22,21 +23,46 @@ async function init() {
   }
 }
 
+// Cache for getting all users
+const getCachedAllUsers = unstable_cache(
+  async () => {
+    if (!db) await init()
+    const users = await U.find().toArray()
+    return users.map((user) => ({
+      id: user._id.toString(),
+      username: user.username,
+      password: user.password,
+      role: user.role,
+      parent: user.parent ?? '',
+    }))
+  },
+  ['all-users'],
+  { revalidate: 60 }
+)
+
+// Cache for getting user's children
+const getCachedUserChilds = unstable_cache(
+  async (username: string) => {
+    if (!db) await init()
+    const users = await U.find({ parent: username }).toArray()
+    return users.map((user) => ({
+      username: user.username,
+      password: user.password,
+      role: user.role,
+      parent: user.parent ?? '',
+    }))
+  },
+  ['user-childs'],
+  { revalidate: 60 }
+)
+
 export async function getChilds(username: string): Promise<{
   users: User[]
   error?: any
 }> {
   try {
-    if (!db) await init()
-    const users = await U.find({ parent: username }).toArray()
-    return {
-      users: users.map((user) => ({
-        username: user.username,
-        password: user.password,
-        role: user.role,
-        parent: user.parent ?? '',
-      })),
-    }
+    const users = await getCachedUserChilds(username)
+    return { users }
   } catch (error) {
     return {
       users: [],
@@ -248,17 +274,8 @@ export async function getUsers(): Promise<{
   error?: any
 }> {
   try {
-    if (!db) await init()
-    const users = await U.find().toArray()
-    return {
-      users: users.map((user) => ({
-        id: user._id.toString(),
-        username: user.username,
-        password: user.password,
-        role: user.role,
-        parent: user.parent ?? '',
-      })),
-    }
+    const users = await getCachedAllUsers()
+    return { users }
   } catch (error) {
     return {
       users: [],
