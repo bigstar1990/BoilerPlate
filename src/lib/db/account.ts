@@ -1,6 +1,7 @@
 import clientPromise from '@/lib/mongoClient'
 import { Collection, Db, MongoClient, ObjectId } from 'mongodb'
 import Account from '@/types/account'
+import { unstable_cache } from 'next/cache'
 
 const dbName = process.env.MONGO_DATABASE_NAME
 const Accounts_DB_NAME = process.env.MONGO_COLLECTION_ACCOUNTS as string
@@ -401,26 +402,34 @@ export async function updateAccountStatus({
   }
 }
 
+// Cache for getting all accounts
+const getCachedAllAccounts = unstable_cache(
+  async () => {
+    if (!db) await init()
+    const accounts = await A.find({}).toArray()
+    return accounts.map((account) => ({
+      id: account._id.toString(),
+      credentials: account.credentials,
+      owner: account.owner,
+      status: account.status,
+      name: account.name,
+      createdBy: account.createdBy,
+      asUser: account.asUser,
+      last_fetch_campaigns: account.last_fetch_campaigns,
+      last_fetch_customers: account.last_fetch_customers,
+    }))
+  },
+  ['all-accounts'],
+  { revalidate: 60 }
+)
+
 export async function getAllAccounts(): Promise<{
   accounts?: Account[]
   error?: string
 }> {
   try {
-    if (!db) await init()
-    const accounts = await A.find({}).toArray()
-    return {
-      accounts: accounts.map((account) => ({
-        id: account._id.toString(),
-        credentials: account.credentials,
-        owner: account.owner,
-        status: account.status,
-        name: account.name,
-        createdBy: account.createdBy,
-        asUser: account.asUser,
-        last_fetch_campaigns: account.last_fetch_campaigns,
-        last_fetch_customers: account.last_fetch_customers,
-      })),
-    }
+    const accounts = await getCachedAllAccounts()
+    return { accounts }
   } catch (error) {
     return {
       error: 'Error',
@@ -488,22 +497,34 @@ export async function getAccountAdmin({
     }
   }
 }
+
+// Cache for getting account by ID
+const getCachedAccountById = unstable_cache(
+  async (accountId: string) => {
+    if (!db) await init()
+    const account = await A.findOne({
+      _id: new ObjectId(accountId),
+      status: { $nin: ['deleted', 'inactive'] },
+    })
+    return account
+  },
+  ['account-by-id'],
+  { revalidate: 60 }
+)
+
 export async function getAccount({
   account_id,
 }: {
   account_id: string
 }): Promise<{ account?: Account; error?: string }> {
   try {
-    if (!db) await init()
-    const account = await A.findOne({
-      _id: new ObjectId(account_id),
-      status: { $nin: ['deleted', 'inactive'] },
-    })
+    const account = await getCachedAccountById(account_id)
 
     if (!account)
       return {
         error: 'No account found',
       }
+
     return {
       account: {
         id: account._id.toString(),
