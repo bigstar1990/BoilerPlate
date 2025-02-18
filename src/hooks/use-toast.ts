@@ -2,6 +2,7 @@
 
 // Inspired by react-hot-toast library
 import * as React from 'react'
+import { unstable_cache } from 'next/cache'
 
 import type { ToastActionElement, ToastProps } from '@/components/shadcn/toast'
 
@@ -139,7 +140,21 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>
 
-function toast({ ...props }: Toast) {
+// Cache toast configurations
+const getCachedToastConfig = unstable_cache(
+  async (toastId: string) => {
+    return {
+      TOAST_LIMIT: 1,
+      TOAST_REMOVE_DELAY: 1000000,
+      // Add any other configuration you want to cache
+    }
+  },
+  ['toast-config'],
+  { revalidate: 3600 } // Cache for 1 hour
+)
+
+async function toast({ ...props }: Toast) {
+  const config = await getCachedToastConfig(genId())
   const id = genId()
 
   const update = (props: ToasterToast) =>

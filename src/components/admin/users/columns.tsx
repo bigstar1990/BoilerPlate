@@ -1,8 +1,22 @@
 import { FieldConfig } from '@/components/ui/better-form'
 import { columnsObjType } from '@/components/ui/shadcn-data-table/columns'
 import { DataTableRowActions } from '@/components/ui/shadcn-data-table/data-table-row-actions'
+import { unstable_cache } from 'next/cache'
 
 import User from '@/types/user'
+
+// Cache role options
+const getCachedRoleOptions = unstable_cache(
+  async () => {
+    return [
+      { id: 'admin', name: 'Admin' },
+      { id: 'user', name: 'User' },
+      { id: 'super-admin', name: 'Super Admin' },
+    ]
+  },
+  ['role-options'],
+  { revalidate: 3600 } // Cache for 1 hour since these rarely change
+)
 
 export default function getUserColumnDef(onEdit: any, onDelete: any): columnsObjType[] {
   return [
@@ -78,6 +92,18 @@ export default function getUserColumnDef(onEdit: any, onDelete: any): columnsObj
   ]
 }
 
+// Cache user options
+const getCachedUserOptions = unstable_cache(
+  async (users: User[]) => {
+    return users.map((user) => ({
+      id: user.username,
+      name: user.username,
+    }))
+  },
+  ['user-select-options'],
+  { revalidate: 300 }
+)
+
 export function getFieldConfigs({
   users,
 }: {
@@ -89,20 +115,17 @@ export function getFieldConfigs({
     role: {
       type: 'betterSelect',
       options: async (data) => {
-        return [
-          { id: 'admin', name: 'Admin' },
-          { id: 'user', name: 'User' },
-          { id: 'super-admin', name: 'Super Admin' },
-        ]
+        return await getCachedRoleOptions()
       },
       multiple: false,
     },
   } as Record<string, FieldConfig>
+
   if (users.length > 0) {
     fieldConfigs['parent'] = {
       type: 'betterSelect',
       options: async (data) => {
-        return users.map((user) => ({ id: user.username, name: user.username }))
+        return await getCachedUserOptions(users)
       },
       multiple: false,
       necessary: false,

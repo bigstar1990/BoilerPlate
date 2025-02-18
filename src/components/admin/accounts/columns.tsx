@@ -2,6 +2,7 @@ import { FieldConfig } from '@/components/ui/better-form'
 import { columnsObjType } from '@/components/ui/shadcn-data-table/columns'
 import { DataTableRowActions } from '@/components/ui/shadcn-data-table/data-table-row-actions'
 import User from '@/types/user'
+import { unstable_cache } from 'next/cache'
 
 export default function getAccountColumnDef(
   onEdit: any,
@@ -70,6 +71,18 @@ export default function getAccountColumnDef(
   ]
 }
 
+// Cache user options for select fields
+const getCachedUserOptions = unstable_cache(
+  async (users: User[]) => {
+    return users.map((user) => ({
+      id: user.username,
+      name: user.username,
+    }))
+  },
+  ['user-select-options'],
+  { revalidate: 300 }
+)
+
 export function getFieldConfigs({
   users,
 }: {
@@ -82,10 +95,7 @@ export function getFieldConfigs({
     owner: {
       type: 'betterSelect',
       options: async (data: any) => {
-        return users.map((user) => ({
-          id: user.username,
-          name: user.username,
-        }))
+        return await getCachedUserOptions(users)
       },
     },
     username: {
@@ -99,10 +109,7 @@ export function getFieldConfigs({
     createdBy: {
       type: 'betterSelect',
       options: async (data: any) => {
-        return users.map((user) => ({
-          id: user.username,
-          name: user.username,
-        }))
+        return await getCachedUserOptions(users)
       },
     },
     status: {

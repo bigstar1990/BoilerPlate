@@ -1,7 +1,7 @@
 'use client'
-import React from 'react'
-import { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { signIn, signOut, useSession, getCsrfToken } from 'next-auth/react'
+import { unstable_cache } from 'next/cache'
 
 import {
   Card,
@@ -16,6 +16,14 @@ import { Button } from '@/components/shadcn/button'
 
 //connection page using shadcn card with username password (possibility to hide password) and connection with next-auth
 
+const getCachedCsrfToken = unstable_cache(
+  async () => {
+    return await getCsrfToken()
+  },
+  ['csrf-token'],
+  { revalidate: 3600 } // Cache for 1 hour
+)
+
 export default function SignIn() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -23,9 +31,9 @@ export default function SignIn() {
   const [error, setError] = useState('')
   const session = useSession()
 
-  const handleSignIn = async () => {
+  const handleSignIn = useCallback(async () => {
     try {
-      const csrfToken = await getCsrfToken()
+      const csrfToken = await getCachedCsrfToken()
       const response = await signIn('credentials', {
         username,
         password,
@@ -42,7 +50,7 @@ export default function SignIn() {
     } catch (err) {
       setError('An error occurred during sign in')
     }
-  }
+  }, [username, password])
 
   return (
     <Card className='mx-auto mt-8 w-[350px]'>

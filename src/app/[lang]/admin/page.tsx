@@ -13,6 +13,7 @@ import {
 } from '@/components/shadcn/navigation-menu'
 import Account from '@/types/account'
 import User from '@/types/user'
+import { unstable_cache } from 'next/cache'
 
 type AdminPage =
   | 'accounts'
@@ -22,31 +23,36 @@ type AdminPage =
   | 'campaigns'
   | 'users'
 
+// Cache the user fetching for 60 seconds
+const getCachedUsers = unstable_cache(
+  async () => {
+    const { users } = await getUsers()
+    return users
+  },
+  ['admin-users'],
+  { revalidate: 60 }
+)
+
+// Cache the accounts fetching for 60 seconds
+const getCachedAccounts = unstable_cache(
+  async () => {
+    const { accounts } = await getAllAccountsAdmin()
+    return accounts
+  },
+  ['admin-accounts'],
+  { revalidate: 60 }
+)
+
 export default async function CheckoutChamp_page({
   searchParams,
 }: {
   searchParams: any
 }) {
-  const page = (await searchParams.page) || 'users'
+  const page = (searchParams?.page || 'users') as AdminPage
 
-  let users = [] as User[]
-
-  let accounts = [] as Account[]
-
-  switch (page) {
-    case 'accounts':
-      const { accounts: fetchedAccounts } = await getAllAccountsAdmin()
-      accounts = fetchedAccounts
-      const { users: fetchedUsers1, success: usersSuccess1 } = await getUsers()
-      if (usersSuccess1) users = fetchedUsers1
-      break
-    case 'users':
-      const { users: fetchedUsers2, success: usersSuccess2 } = await getUsers()
-      if (usersSuccess2) users = fetchedUsers2
-      break
-    default:
-      break
-  }
+  // Use cached functions
+  const users = await getCachedUsers()
+  const accounts = await getCachedAccounts()
 
   return (
     <div className='m-6 flex w-full flex-col'>
